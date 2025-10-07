@@ -1,23 +1,17 @@
-[build-system]
-requires = ["setuptools>=75.3.0"]
-build-backend = "setuptools.build_meta"
-
-[project]
+[tool.poetry]
 name = "flightscope"
-description = "Interactive flight simulator/real time inspector app"
-readme = {file = "README.md", content-type = "text/markdown"}
-requires-python = ">=3.13"
-authors = [{ name = "Nazenano" }]
-keywords = []
-
 version = "0.1.0"
+description = "Interactive flight simulator/real time inspector app"
+authors = ["Nazenano", "Fakas"]
+readme = "README.md"
+package-mode = false
+homepage = "https://github.com/Nazenano/flightscope"
 
-dependencies = [
-]
+[tool.poetry.dependencies]
+python = ">=3.13"
 
-[project.optional-dependencies]
-dev = [
-]
+[tool.poetry.group.dev.dependencies]
 
-[project.urls]
-Repository = "https://github.com/Nazenano/flightscope"
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
