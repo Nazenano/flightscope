@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=75.3.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flightscope"
+description = "Interactive flight simulator/real time inspector app"
+readme = {file = "README.md", content-type = "text/markdown"}
+requires-python = ">=3.13"
+authors = [{ name = "Nazenano" }]
+keywords = []
+
+version = "0.1.0"
+
+dependencies = [
+]
+
+[project.optional-dependencies]
+dev = [
+]
+
+[project.urls]
+Repository = "https://github.com/Nazenano/flightscope"
