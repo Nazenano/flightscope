@@ -4,11 +4,15 @@ version = "0.1.0"
 description = "Interactive flight simulator/real time inspector app"
 authors = ["Nazenano", "Fakas"]
 readme = "README.md"
-package-mode = false
 homepage = "https://github.com/Nazenano/flightscope"
 
 [tool.poetry.dependencies]
 python = ">=3.13"
+numpy = "^2.3.3"
+black = "^25.9.0"
+pygame = "^2.6.1"
+pyopengl = "^3.1.10"
+pyopengl-accelerate = "^3.1.10"
 
 [tool.poetry.group.dev.dependencies]
 
