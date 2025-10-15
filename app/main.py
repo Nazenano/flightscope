@@ -1,48 +1,56 @@
-import pygame
-from pygame.locals import DOUBLEBUF, OPENGL
-from OpenGL import GL as gl
-from OpenGL import GLU as glu
-from app.config import WindowConfig as c
+from ursina import *
 
+app = Ursina(title='flightscope',  borderless=True)
 
-def main():
-    pygame.init()
+window.color =color.rgb(5/255, 51/255, 255/255)
+window.size = Vec2(1280,720)
+window.position = Vec2(0,40)
 
-    flags = DOUBLEBUF | OPENGL
-    if c.FULLSCREEN:
-        flags |= pygame.FULLSCREEN
+earth = Entity(
+    model='sphere',
+    texture='textures/earth_texture.png',
+    scale=3
+)
 
-    ## Create the screen ##
-    pygame.display.set_mode((c.WINDOW_WIDTH, c.WINDOW_HEIGHT), flags)
-    pygame.display.set_caption(c.WINDOW_TITLE)
+DirectionalLight().look_at(earth)
+AmbientLight(color=(0.2, 0.2, 0.2, 1)) 
 
-    ## OpenGL basic setup ##
-    gl.glViewport(0, 0, c.WINDOW_WIDTH, c.WINDOW_HEIGHT)
-    gl.glMatrixMode(gl.GL_PROJECTION)
-    gl.glLoadIdentity()
-    glu.gluPerspective(c.FOV, c.ASPECT_RATIO, c.NEAR_PLANE, c.FAR_PLANE)
-    gl.glMatrixMode(gl.GL_MODELVIEW)
-    gl.glLoadIdentity()
+camera.position = (0, 0, -10)
+camera.look_at(earth) 
 
-    gl.glEnable(gl.GL_DEPTH_TEST)
-    gl.glClearColor(*c.BG_COLOR)
+dragging = False
+last_mouse = Vec2(0, 0)
+rotation_speed = 2
+last_drag_time = 0
 
-    clock = pygame.time.Clock()
+# speed slider
+speed_slider = Slider(min=0, max=50, default=rotation_speed, step=1)
+speed_slider.position = Vec2(.5, -.4)      
+speed_slider.scale = 1
 
-    ## Main loop ##
-    running = True
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
+speed_text = Text(text=f'Speed :', position=(.36, -.387), scale=1)
 
-        gl.glClear(int(gl.GL_COLOR_BUFFER_BIT) | int(gl.GL_DEPTH_BUFFER_BIT))
+def update():
+   
+    global rotation_speed , dragging, last_mouse, auto_rotation_enabled
+    rotation_speed = speed_slider.value
+    speed_text.text = f'Speed :'
+    
+    earth.rotation_y += rotation_speed * time.dt
 
-        pygame.display.flip()
-        clock.tick(c.FPS)
+    if mouse.left: 
+        if not getattr(earth, 'dragging', False):
+            earth.dragging = True
+            earth.last_mouse = Vec2(mouse.x, mouse.y)
+        else:
+            dx = mouse.x - earth.last_mouse.x
+            dy = mouse.y - earth.last_mouse.y
+            earth.rotation_y -= dx * 100
+            earth.rotation_x -= dy * 100
+            earth.last_mouse = Vec2(mouse.x, mouse.y)
+    else:
+        earth.dragging = False
 
-    pygame.quit()
+earth.update = update
 
-
-if __name__ == "__main__":
-    main()
+app.run()
