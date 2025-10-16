@@ -9,7 +9,6 @@ homepage = "https://github.com/Nazenano/flightscope"
 [tool.poetry.dependencies]
 python = ">=3.12,<4.0.0"
 numpy = "^2.3.3"
-black = "^25.9.0"
 ursina = "^8.2.0"
 
 [build-system]
