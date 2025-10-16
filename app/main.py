@@ -12,7 +12,7 @@ window.position = Vec2(0, 40)
 earth = Entity(
     model='sphere',
     texture='textures/earth_texture.jpg',
-    scale=Vec2(3, 3),
+    scale=3,
     color=color.white
 )
 
