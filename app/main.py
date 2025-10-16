@@ -12,8 +12,7 @@ window.position = Vec2(0, 40)
 earth = Entity(
     model='sphere',
     texture='textures/earth_texture.jpg',
-    scale=3,
-    color=color.white
+    scale=3, # type: ignore
 )
 
 DirectionalLight().look_at(earth)
@@ -22,7 +21,7 @@ AmbientLight(color=(0.2, 0.2, 0.2, 1))
 camera.position = (0, 0, -10)
 camera.look_at(earth)
 
-rotation_speed = 2.0
+rotation_speed = 2
 
 dragging = False
 last_mouse = Vec2(0, 0)
@@ -38,7 +37,7 @@ def update():
     global rotation_speed, dragging, last_mouse, auto_rotation_enabled
 
     rotation_speed = speed_slider.value
-    speed_text.text = f'Speed: {rotation_speed:.1f}'
+    speed_text.text = 'Speed :'
 
     earth.rotation_y += rotation_speed * time.dt
 
