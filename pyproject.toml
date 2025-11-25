@@ -7,14 +7,11 @@ readme = "README.md"
 homepage = "https://github.com/Nazenano/flightscope"
 
 [tool.poetry.dependencies]
-python = ">=3.13"
+python = ">=3.12,<4.0.0"
 numpy = "^2.3.3"
-black = "^25.9.0"
-pygame = "^2.6.1"
-pyopengl = "^3.1.10"
-pyopengl-accelerate = "^3.1.10"
-
-[tool.poetry.group.dev.dependencies]
+ursina = "^8.2.0"
+requests = "^2.32.5"
+python-dotenv = "^1.2.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
