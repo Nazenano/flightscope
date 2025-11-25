@@ -1,18 +1,27 @@
-from ursina import Ursina, Entity, DirectionalLight, AmbientLight, Slider, Text, Vec2, color, time, camera, window, mouse
-
-app = Ursina(
-    title='flightscope',
-    borderless=True
+from ursina import (
+    Ursina,
+    Entity,
+    DirectionalLight,
+    AmbientLight,
+    Slider,
+    Text,
+    Vec2,
+    Vec3,
+    color,
+    time,
+    camera,
+    window,
+    mouse,
 )
+
+app = Ursina(title="flightscope", borderless=True)
 
 window.color = color.rgb(5 / 255, 51 / 255, 255 / 255)
 window.size = Vec2(1280, 720)
 window.position = Vec2(0, 40)
 
 earth = Entity(
-    model='sphere',
-    texture='textures/earth_texture.jpg',
-    scale=3, # type: ignore
+    model="sphere", texture="textures/earth_texture.jpg", scale=Vec3(3, 3, 3)
 )
 
 DirectionalLight().look_at(earth)
@@ -31,18 +40,19 @@ speed_slider = Slider(min=0, max=50, default=rotation_speed, step=1)
 speed_slider.position = Vec2(0.5, -0.4)
 speed_slider.scale = 1
 
-speed_text = Text(text=f'Speed:', position=(0.36, -0.387), scale=1)
+speed_text = Text(text="Speed:", position=(0.36, -0.387), scale=1)
+
 
 def update():
     global rotation_speed, dragging, last_mouse, auto_rotation_enabled
 
     rotation_speed = speed_slider.value
-    speed_text.text = 'Speed :'
+    speed_text.text = "Speed:"
 
     earth.rotation_y += rotation_speed * time.dt
 
     if mouse.left:
-        if not getattr(earth, 'dragging', False):
+        if not getattr(earth, "dragging", False):
             earth.dragging = True
             earth.last_mouse = Vec2(mouse.x, mouse.y)
         else:
@@ -53,6 +63,7 @@ def update():
             earth.last_mouse = Vec2(mouse.x, mouse.y)
     else:
         earth.dragging = False
+
 
 earth.update = update
 

@@ -1,0 +1,13 @@
+{
+  "venvPath": ".",
+  "venv": ".venv",
+  "pythonVersion": "3.12",
+  "typeCheckingMode": "basic",
+  "reportWildcardImportFromLibrary": "none",
+  "reportCallIssue": "none",
+  "reportAttributeAccessIssue": "none",
+  "reportOptionalMemberAccess": "none",
+  "reportMissingModuleSource": "none",
+  "reportMissingImports": "none",
+  "exclude": ["**/__pycache__", "**/build", "**/dist"]
+}

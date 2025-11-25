@@ -10,6 +10,8 @@ homepage = "https://github.com/Nazenano/flightscope"
 python = ">=3.12,<4.0.0"
 numpy = "^2.3.3"
 ursina = "^8.2.0"
+requests = "^2.32.5"
+python-dotenv = "^1.2.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
