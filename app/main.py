@@ -1,5 +1,6 @@
-from ursina import Ursina, Entity, DirectionalLight, AmbientLight, Slider, Text,  Vec3, Vec2, color, time, camera, window, mouse , WindowPanel, InputField, Button , ButtonGroup
-
+from ursina import Ursina, Entity, DirectionalLight, AmbientLight, Slider, Text,  Vec3, Vec2, color, time, camera, window, mouse , WindowPanel, InputField, Button , ButtonGroup , Mesh
+from math import sin , cos , radians, acos 
+import api.requests as req
 
 app = Ursina(
     title='flightscope',
@@ -25,7 +26,7 @@ AmbientLight(color=(0.2, 0.2, 0.2, 1))
 
 
 
-rotation_speed = 2
+rotation_speed = 0
 rotation_lock = False
 dragging = False
 last_mouse = 0
@@ -38,17 +39,23 @@ resume_time = time.time()
 rotation_timeout = 2
 valid_rotation = False
 
+arc_points = 30   
+arc_thickness = 0.01
+
 camera.position = (0, 0, zoom_distance)
 camera.look_at(earth)
 
  
-def mode_check () : 
-    earth.wireframe =  True if modes.value == 'Simulation' else False
+def mode_check () :
+    if modes.value == 'Simulation' :
+        earth.wireframe= True
+        earth.texture = None
+    else:
+        earth.wireframe = False
+        earth.texture =  'textures/earth_texture.jpg'
 
-
-modes= ButtonGroup(('Real Time', 'Simulation'), origin= (0,0))
+modes= ButtonGroup(('Real Time', 'Simulation'), origin= (0,0), spacing=(1,0))
 modes.on_value_changed = mode_check
-
 
 settings = WindowPanel(
     title='Settings',
@@ -60,15 +67,61 @@ settings = WindowPanel(
         ),
     popup=False
     )
-settings.y = settings.panel.scale_y / 2 * settings.scale_y    
+settings.position = Vec2(.85, -.15)  
 settings.layout()
-
-
 
 pivot = Entity(position=earth.position)
 camera.parent = pivot
 
-   
+# print(req.get_all_aircraft( 45.75 , 48.6 , 16.10 , 22.9))
+
+
+def latlon_to_unitvec(lat_deg: float, lon_deg: float):
+    lat = radians(lat_deg)
+    lon = radians(lon_deg)
+    x = cos(lat) * sin(lon)
+    y = sin(lat)
+    z = cos(lat) * cos(lon)
+    return Vec3(x, y, z).normalized()
+
+def great_circle_points(unit_a: Vec3, unit_b: Vec3, steps: int):
+    dot = max(-1.0, min(1.0, unit_a.dot(unit_b)))
+    angle = acos(dot)
+    pts = []
+    if abs(angle) < 1e-6:
+        pts.append(unit_a)
+        return pts
+
+    for i in range(steps + 1):
+        t = i / steps
+        s1 = sin((1 - t) * angle)
+        s2 = sin(t * angle)
+        denom = sin(angle)
+        v = (unit_a * s1 + unit_b * s2) / denom
+        pts.append(v.normalized())
+    return pts
+
+
+
+def create_arc_mesh(unit_pts, radius=1.5, thickness=0.05, color_=color.red):
+    vertices = []
+    triangles = []
+    for u in unit_pts:
+        pos = u * radius
+        vertices.append(pos)
+
+    # LineList: minden 2 pont egy vonal
+    # Ursina: egyszerűen Line modell (Line segédfüggvény)
+    line = Entity(model=Mesh(vertices=vertices, mode='line'), color=color_)
+    return line
+
+a = latlon_to_unitvec(0, 0)   # Budapest
+b = latlon_to_unitvec(48.15, 0)  # Bratislava
+pts = great_circle_points(a, b, arc_points)
+arc_entity = create_arc_mesh(pts, 1.6)
+
+
+
 
 def input(key) : 
     global dragging , resume_time , rotation_lock , valid_rotation
@@ -89,11 +142,7 @@ def input(key) :
         dragging=False
         resume_time = time.time()+rotation_timeout
         valid_rotation=False
-    # if key == "w":
-    #     earth.wireframe = True
-    # if key == "w up":
-    #     earth.wireframe = False
-    print(key)
+    # print(key)
 
 
 def update():
@@ -102,7 +151,7 @@ def update():
     rotation_speed = settings.content[1].value
     
     if not dragging and time.time()>= resume_time and not rotation_lock:
-        earth.rotation_y += rotation_speed * time.dt
+        pivot.rotation_y += rotation_speed * time.dt
 
                     
     camera.look_at(earth)   
@@ -115,14 +164,13 @@ def update():
             dx = mouse.x - earth.last_mouse
             dy = mouse.y - last_pivot_position
             
-            earth.rotation_y -= dx * 100
+            pivot.rotation_y += dx * 100
             pivot.rotation_x -= dy * 100
 
             if pivot.rotation_x < -80:
                 pivot.rotation_x = -80
             elif pivot.rotation_x > 80:
                 pivot.rotation_x = 80
-            
 
             earth.last_mouse = mouse.x
             last_pivot_position = mouse.y

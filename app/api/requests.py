@@ -1,5 +1,5 @@
 from typing import Any
-from app.api.client import APIClient
+from .client import APIClient
 
 api = APIClient()
 

@@ -1,7 +1,7 @@
 import os
 import httpx
 from dotenv import load_dotenv
-from app.api.auth import AuthCredentials
+from .auth import AuthCredentials
 
 load_dotenv()
 
