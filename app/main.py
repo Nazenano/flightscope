@@ -117,7 +117,8 @@ def create_arc_mesh(unit_pts, radius=3, thickness=0.05, color_=color.cyan):
     return line
 
 
-airplanes = req.get_all_aircraft( 40.75 , 50.6 , 10.10 , 26.9)
+airplanes = req.get_all_aircraft()
+#  40.75 , 50.6 , 10.10 , 26.9
 # print(airplanes)
 a = latlon_to_unitvec(0, 0)
 
@@ -136,6 +137,8 @@ def globe_clicked (data ) :
     print(req.get_aircraft_flights(data['icao24'], int(time.time()-3600) , int(time.time())  ))
 
 for airplane in airplanes['states']:
+    if airplane['latitude'] is None or airplane['longitude'] is None or airplane['baro_altitude'] is None:
+        continue  
     if airplane['baro_altitude'] is not None:
         normalized_value = (airplane['baro_altitude'] - 0) / (15000 - 0)
         new_value = 0.005 + (.05 - 0.005) * normalized_value

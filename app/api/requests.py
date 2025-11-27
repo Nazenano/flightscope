@@ -1,7 +1,7 @@
 from typing import Any
 from .client import APIClient
 
-api = APIClient()
+api = APIClient(True)
 
 
 def get_all_aircraft(
