@@ -12,10 +12,10 @@ from ursina import (
     mouse,
     Mesh,
 )
-import api.requests as req
+from api.requests import get_aircraft_metadata
 from functools import partial
+from components.details_window import DetailsWindow
 from core.airplane import fetch_airplanes
-from core.utils import latlon_to_unitvec
 from components.settings_window import SettingsWindow
 
 app = Ursina(title="flightscope", borderless=True)
@@ -114,16 +114,22 @@ camera.parent = pivot
 planes = fetch_airplanes()
 
 
-def globe_clicked(data):
-    print(data)
-    print(int(time.time() - 3600 * 5))
-    print(int(time.time()))
-    print(data["icao24"])
-    print(
-        req.get_aircraft_flights(
-            data["icao24"], int(time.time() - 3600), int(time.time())
-        )
-    )
+details_window = None
+
+
+def globe_clicked(plane_data):
+    global details_window
+
+    if details_window:
+        details_window.destroy()
+
+    icao = plane_data["icao24"]
+
+    meta = get_aircraft_metadata(icao)
+
+    combined = {**plane_data, **meta}
+
+    details_window = DetailsWindow(icao, combined)
 
 
 airplane_entities = {}

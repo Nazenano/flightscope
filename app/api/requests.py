@@ -128,3 +128,41 @@ def get_aircraft_flights(
         print("Error:", response.text)
         return []
 
+
+def get_aircraft_metadata(icao24: str) -> dict[str, Any]:
+    """
+    Fetch detailed metadata for a specific aircraft from OpenSky.
+
+    Args:
+        - icao24 (str): ICAO 24-bit identifier of the aircraft.
+
+    Returns: dict with keys:
+        - icao24 (str)
+        - registration (str or None)
+        - manufacturer (str or None)
+        - model (str or None)
+        - typecode (str or None)
+        - serial_number (str or None)
+    """
+    if not icao24 or len(icao24) != 6:
+        print(f"Invalid icao24: {icao24}")
+        return {}
+
+    response = api.get(f"/metadata/aircraft/icao/{icao24}")
+    raw = None
+
+    try:
+        raw = response.json()
+    except Exception:
+        print("Error parsing metadata:", response.text)
+        return {}
+
+    return {
+        "icao24": raw.get("icao24", icao24),
+        "registration": raw.get("registration"),
+        "manufacturer": raw.get("manufacturericao") or raw.get("manufacturername"),
+        "model": raw.get("model"),
+        "typecode": raw.get("typecode"),
+        "serial_number": raw.get("serialnumber") or raw.get("serial_number"),
+    }
+
