@@ -16,20 +16,31 @@ def get_all_aircraft(
     Optionally filter by bounding box.
 
     Args:
-        lamin (optional float): Minimum latitude
-        lamax (optional float): Maximum latitude
-        lomin (optional float): Minimum longitude
-        lomax (optional float): Maximum longitude
+        - lamin (optional float): Minimum latitude
+        - lamax (optional float): Maximum latitude
+        - lomin (optional float): Minimum longitude
+        - lomax (optional float): Maximum longitude
 
-    Returns:
-        dict: JSON response from OpenSky API:
-            - "time": int, UNIX timestamp of the query
-            - "states": list of aircraft state vectors, where each item includes:
-                - ICAO24 ID
-                - Callsign
-                - Latitude, Longitude, Altitude
-                - Velocity, Heading, Vertical Rate
-                - On-ground flag, squawk, sensors, and other live info
+    Returns: dict
+        - time (int): Unix timestamp when the data snapshot was generated.
+        - states (list[dict]): List of aircraft state dictionaries. Each aircraft contains:
+            - icao24 (str): Unique 24-bit ICAO aircraft identifier.
+            - callsign (str or None): Aircraft callsign if available.
+            - origin_country (str): Country of registration.
+            - time_position (int or None): Timestamp of last position update.
+            - last_contact (int): Timestamp of last received message.
+            - longitude (float or None): Aircraft longitude in degrees.
+            - latitude (float or None): Aircraft latitude in degrees.
+            - baro_altitude (float or None): Barometric altitude in meters.
+            - on_ground (bool): True if the aircraft is on the ground.
+            - velocity (float or None): Ground speed in meters per second.
+            - heading (float or None): Direction of travel in degrees (0–360).
+            - vertical_rate (float or None): Climb or descent rate in meters per second.
+            - sensors (list[int] or None): Sensor IDs contributing position data.
+            - geo_altitude (float or None): Geometric altitude in meters.
+            - squawk (str or None): Assigned transponder squawk code.
+            - spi (bool): Special Position Identification flag.
+            - position_source (int): Source of position data (0=ADS-B, 1=ASTERIX, 2=MLAT).
     """
     params: dict[str, float] = {}
 
@@ -42,7 +53,36 @@ def get_all_aircraft(
     if lomax is not None:
         params["lomax"] = lomax
 
-    return api.get("/states/all", params=params).json()
+    raw = api.get("/states/all", params=params).json()
+
+    parsed_states = []
+    for s in raw.get("states", []):
+        parsed_states.append(
+            {
+                "icao24": s[0],
+                "callsign": s[1],
+                "origin_country": s[2],
+                "time_position": s[3],
+                "last_contact": s[4],
+                "longitude": s[5],
+                "latitude": s[6],
+                "baro_altitude": s[7],
+                "on_ground": s[8],
+                "velocity": s[9],
+                "heading": s[10],
+                "vertical_rate": s[11],
+                "sensors": s[12],
+                "geo_altitude": s[13],
+                "squawk": s[14],
+                "spi": s[15],
+                "position_source": s[16],
+            }
+        )
+
+    return {
+        "time": raw.get("time"),
+        "states": parsed_states,
+    }
 
 
 def get_aircraft_flights(
@@ -55,12 +95,11 @@ def get_aircraft_flights(
     Each flight includes departure and arrival airports, scheduled and actual times, and duration.
 
     Args:
-        icao24 (str): ICAO24 ID of the aircraft
-        begin (optional int): Unix timestamp marking the start of the query window
-        end (optional int): Unix timestamp marking the end of the query window
+        - icao24 (str): ICAO24 ID of the aircraft
+        - begin (optional int): Unix timestamp marking the start of the query window
+        - end (optional int): Unix timestamp marking the end of the query window
 
-    Returns:
-        list[dict]: A list of flight records, where each record may contain:
+    Returns: list[dict]: A list of flight records, where each record may contain:
             - "icao24": str, aircraft ID
             - "estDepartureAirport": str, departure airport ICAO code
             - "estArrivalAirport": str, arrival airport ICAO code
