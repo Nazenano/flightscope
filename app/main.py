@@ -1,6 +1,8 @@
 from ursina import Ursina, Entity, DirectionalLight, AmbientLight, Slider, Text,  Vec3, Vec2, color, time, camera, window, mouse , WindowPanel, InputField, Button , ButtonGroup , Mesh
 from math import sin , cos , radians, acos 
 import api.requests as req
+from functools import partial
+
 
 app = Ursina(
     title='flightscope',
@@ -73,54 +75,91 @@ settings.layout()
 pivot = Entity(position=earth.position)
 camera.parent = pivot
 
-# print(req.get_all_aircraft( 45.75 , 48.6 , 16.10 , 22.9))
-
-
-def latlon_to_unitvec(lat_deg: float, lon_deg: float):
-    lat = radians(lat_deg)
-    lon = radians(lon_deg)
-    x = cos(lat) * sin(lon)
-    y = sin(lat)
-    z = cos(lat) * cos(lon)
-    return Vec3(x, y, z).normalized()
-
-def great_circle_points(unit_a: Vec3, unit_b: Vec3, steps: int):
-    dot = max(-1.0, min(1.0, unit_a.dot(unit_b)))
-    angle = acos(dot)
-    pts = []
-    if abs(angle) < 1e-6:
-        pts.append(unit_a)
-        return pts
-
-    for i in range(steps + 1):
-        t = i / steps
-        s1 = sin((1 - t) * angle)
-        s2 = sin(t * angle)
-        denom = sin(angle)
-        v = (unit_a * s1 + unit_b * s2) / denom
-        pts.append(v.normalized())
-    return pts
 
 
 
-def create_arc_mesh(unit_pts, radius=1.5, thickness=0.05, color_=color.red):
+def latlon_to_unitvec(lat_deg: float, lon_deg: float ,  radius=1.5, height=0, east_offset=0):
+    lat_r = radians(lat_deg)
+    lon_r = radians(lon_deg+90)
+    x = radius * cos(lat_r) * cos(lon_r)
+    y = radius * sin(lat_r)
+    z = radius * cos(lat_r) * sin(lon_r)
+
+    surface = Vec3(x, y, z)
+    normal = surface.normalized()
+
+    east = Vec3(-sin(lon_r), 0, cos(lon_r)).normalized()
+    final_pos = surface + normal * height + east * east_offset
+    return final_pos
+
+# def great_circle_points(unit_a: Vec3, unit_b: Vec3, steps: int):
+#     dot = max(-1.0, min(1.0, unit_a.dot(unit_b)))
+#     angle = acos(dot)
+#     pts = []
+#     if abs(angle) < 1e-6:
+#         pts.append(unit_a)
+#         return pts
+
+#     for i in range(steps + 1):
+#         t = i / steps
+#         s1 = sin((1 - t) * angle)
+#         s2 = sin(t * angle)
+#         denom = sin(angle)
+#         v = (unit_a * s1 + unit_b * s2) / denom
+#         pts.append(v.normalized())
+#     return pts
+
+
+
+def create_arc_mesh(unit_pts, radius=3, thickness=0.05, color_=color.cyan):
     vertices = []
     triangles = []
     for u in unit_pts:
         pos = u * radius
         vertices.append(pos)
-
-    # LineList: minden 2 pont egy vonal
-    # Ursina: egyszerűen Line modell (Line segédfüggvény)
     line = Entity(model=Mesh(vertices=vertices, mode='line'), color=color_)
     return line
 
-a = latlon_to_unitvec(0, 0)   # Budapest
-b = latlon_to_unitvec(48.15, 0)  # Bratislava
-pts = great_circle_points(a, b, arc_points)
-arc_entity = create_arc_mesh(pts, 1.6)
+
+airplanes = req.get_all_aircraft( 40.75 , 50.6 , 10.10 , 26.9)
+# print(airplanes)
+a = latlon_to_unitvec(0, 0)
+
+Entity(model='sphere',
+scale=.01,
+collider='sphere',
+color= color.orange,
+position= a)
 
 
+def globe_clicked (data ) : 
+    print(data)
+    print( int(time.time()-3600*5))
+    print( int(time.time()))
+    print(req.get_aircraft_flights(data[0], int(time.time()-3600) , int(time.time())  ))
+
+for airplane in airplanes['states']:
+    if airplane[7] is not None:
+        normalized_value = (airplane[7] - 0) / (15000 - 0)
+        new_value = 0.005 + (.05 - 0.005) * normalized_value
+    else :
+        new_value=0.005
+
+    
+    a = latlon_to_unitvec(airplane[6], airplane[5] , height=new_value)
+    # print(airplane[6], airplane[5], airplane[7])
+    Entity(model='sphere',
+    scale=.01,
+    collider='sphere',
+    color= color.cyan,
+    on_click=partial( globe_clicked, airplane ) ,
+    position= a
+)
+
+
+
+# pts = great_circle_points(a, b, arc_points)
+# arc_entity = create_arc_mesh(pts, 1.6)
 
 
 def input(key) : 
