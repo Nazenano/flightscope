@@ -1,7 +1,7 @@
 from typing import Any
 from .client import APIClient
 
-api = APIClient(True)
+api = APIClient()
 
 
 def get_all_aircraft(
@@ -60,7 +60,7 @@ def get_all_aircraft(
     except:
         print("Error:", response.text)
         return {}
-    
+
     parsed_states = []
     for s in raw.get("states", []):
         parsed_states.append(
@@ -127,3 +127,4 @@ def get_aircraft_flights(
     except:
         print("Error:", response.text)
         return []
+

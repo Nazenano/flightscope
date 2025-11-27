@@ -12,9 +12,10 @@ from ursina import (
     mouse,
     Mesh,
 )
-from math import sin, cos, radians, acos
 import api.requests as req
 from functools import partial
+from core.airplane import fetch_airplanes
+from core.utils import latlon_to_unitvec
 from components.settings_window import SettingsWindow
 
 app = Ursina(title="flightscope", borderless=True)
@@ -27,7 +28,7 @@ earth = Entity(
     name="globe",
     model="sphere",
     texture="textures/earth_texture.jpg",
-    scale=3,  # type: ignore
+    scale=Vec3(3),
     collider="sphere",
 )
 
@@ -72,22 +73,6 @@ pivot = Entity(position=earth.position)
 camera.parent = pivot
 
 
-
-
-def latlon_to_unitvec(lat_deg: float, lon_deg: float ,  radius=1.5, height=0, east_offset=0):
-    lat_r = radians(lat_deg)
-    lon_r = radians(lon_deg+90)
-    x = radius * cos(lat_r) * cos(lon_r)
-    y = radius * sin(lat_r)
-    z = radius * cos(lat_r) * sin(lon_r)
-
-    surface = Vec3(x, y, z)
-    normal = surface.normalized()
-
-    east = Vec3(-sin(lon_r), 0, cos(lon_r)).normalized()
-    final_pos = surface + normal * height + east * east_offset
-    return final_pos
-
 # def great_circle_points(unit_a: Vec3, unit_b: Vec3, steps: int):
 #     dot = max(-1.0, min(1.0, unit_a.dot(unit_b)))
 #     angle = acos(dot)
@@ -105,70 +90,63 @@ def latlon_to_unitvec(lat_deg: float, lon_deg: float ,  radius=1.5, height=0, ea
 #         pts.append(v.normalized())
 #     return pts
 
+# def create_arc_mesh(unit_pts, radius=3, thickness=0.05, color_=color.cyan):
+#     vertices = []
+#     triangles = []
+#     for u in unit_pts:
+#         pos = u * radius
+#         vertices.append(pos)
+#     line = Entity(model=Mesh(vertices=vertices, mode="line"), color=color_)
+#     return line
 
-
-def create_arc_mesh(unit_pts, radius=3, thickness=0.05, color_=color.cyan):
-    vertices = []
-    triangles = []
-    for u in unit_pts:
-        pos = u * radius
-        vertices.append(pos)
-    line = Entity(model=Mesh(vertices=vertices, mode='line'), color=color_)
-    return line
-
-
-airplanes = req.get_all_aircraft()
-#  40.75 , 50.6 , 10.10 , 26.9
-# print(airplanes)
-a = latlon_to_unitvec(0, 0)
-
-Entity(model='sphere',
-scale=.01,
-collider='sphere',
-color= color.orange,
-position= a)
-
-
-def globe_clicked (data ) : 
-    print(data)
-    print( int(time.time()-3600*5))
-    print( int(time.time()))
-    print(data["icao24"])
-    print(req.get_aircraft_flights(data['icao24'], int(time.time()-3600) , int(time.time())  ))
-
-for airplane in airplanes['states']:
-    if airplane['latitude'] is None or airplane['longitude'] is None or airplane['baro_altitude'] is None:
-        continue  
-    if airplane['baro_altitude'] is not None:
-        normalized_value = (airplane['baro_altitude'] - 0) / (15000 - 0)
-        new_value = 0.005 + (.05 - 0.005) * normalized_value
-    else :
-        new_value=0.005
-    
-    a = latlon_to_unitvec(airplane['latitude'], airplane['longitude'] , height=new_value)
-    # print(airplane[6], airplane[5], airplane[7])
-    Entity(model='sphere',
-    scale=.01,
-    collider='sphere',
-    color= color.cyan,
-    on_click=partial( globe_clicked, airplane ) ,
-    position= a
-)
-
-
-
+# Entity(
+#     model="sphere",
+#     scale=Vec3(0.01),
+#     collider="sphere",
+#     color=color.orange,
+#     position=latlon_to_unitvec(0, 0),
+# )
 # pts = great_circle_points(a, b, arc_points)
 # arc_entity = create_arc_mesh(pts, 1.6)
 
 
-def input(key) : 
-    global dragging , resume_time , rotation_lock , valid_rotation
-    if key == 'scroll up':
-        if camera.position[2]+1<=min_zoom_distance:
-            camera.position= (0,0,camera.position[2]+1)
-    if key == 'scroll down':
-        if camera.position[2]-1>=max_zoom_distance:
-            camera.position= (0,0,camera.position[2]-1)
+# Render airplanes
+planes = fetch_airplanes()
+
+
+def globe_clicked(data):
+    print(data)
+    print(int(time.time() - 3600 * 5))
+    print(int(time.time()))
+    print(data["icao24"])
+    print(
+        req.get_aircraft_flights(
+            data["icao24"], int(time.time() - 3600), int(time.time())
+        )
+    )
+
+
+airplane_entities = {}
+for plane in planes:
+    e = Entity(
+        model="sphere",
+        scale=Vec3(0.01),
+        collider="sphere",
+        color=color.cyan,
+        on_click=partial(globe_clicked, plane["data"]),
+        position=plane["pos"],
+    )
+    airplane_entities[plane["id"]] = e
+
+
+def input(key):
+    global dragging, resume_time, rotation_lock, valid_rotation
+    if key == "scroll up":
+        if camera.position[2] + 1 <= min_zoom_distance:
+            camera.position = (0, 0, camera.position[2] + 1)
+    if key == "scroll down":
+        if camera.position[2] - 1 >= max_zoom_distance:
+            camera.position = (0, 0, camera.position[2] - 1)
     if key == "left mouse down" and mouse.hovered_entity == earth:
         dragging = True
         valid_rotation = True
@@ -180,11 +158,33 @@ def input(key) :
         dragging = False
         resume_time = time.time() + rotation_timeout
         valid_rotation = False
-    # print(key)
+
+
+last_fetch_time = 0
+
+
+def update_airplanes():
+    planes = fetch_airplanes()
+    for plane in planes:
+        plane_id = plane["id"]
+        if plane["pos"] is None:
+            continue
+        if plane_id in airplane_entities:
+            airplane_entities[plane_id].position = plane["pos"]
+        else:
+            e = Entity(
+                model="sphere",
+                scale=Vec3(0.01),
+                collider="sphere",
+                color=color.cyan,
+                on_click=partial(globe_clicked, plane["data"]),
+                position=plane["pos"],
+            )
+            airplane_entities[plane_id] = e
 
 
 def update():
-    global rotation_speed, dragging, last_mouse, last_pivot_position, resume_time, rotation_lock
+    global rotation_speed, dragging, last_mouse, last_pivot_position, resume_time, rotation_lock, last_fetch_time
 
     rotation_speed = settings_window.value
 
@@ -192,6 +192,12 @@ def update():
         pivot.rotation_y += rotation_speed * -5 * time.dt
 
     camera.look_at(earth)
+
+    # Update airplane positions
+    if time.time() - last_fetch_time > 5.0:
+        update_airplanes()
+        last_fetch_time = time.time()
+
     if mouse.left and mouse.hovered_entity == earth:
         if not getattr(earth, "dragging", False):
             earth.dragging = True
@@ -216,4 +222,3 @@ def update():
 
 
 app.run()
-
