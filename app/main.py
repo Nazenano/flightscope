@@ -1,3 +1,8 @@
+import sys
+import os
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from ursina import (
     Ursina,
     Entity,
@@ -11,12 +16,15 @@ from ursina import (
     window,
     mouse,
     Mesh,
+    destroy
 )
 from api.requests import get_aircraft_metadata
 from functools import partial
 from components.details_window import DetailsWindow
 from core.airplane import fetch_airplanes
 from components.settings_window import SettingsWindow
+from components.generator_window import generator_window
+
 
 app = Ursina(title="flightscope", borderless=True)
 
@@ -60,9 +68,18 @@ def mode_check():
     if settings_window.modes.value == "Simulation":
         earth.wireframe = True
         earth.texture = None
+        for airplane in airplane_entities:
+            destroy(airplane_entities[airplane])
+        settings_window.window.content[4].enabled = False
+        settings_window.window.content[5].enabled = True
+        generator_window.clear()
+        
     else:
         earth.wireframe = False
         earth.texture = "textures/earth_texture.jpg"
+        settings_window.window.content[4].enabled = True
+        settings_window.window.content[5].enabled = False
+        generator_window.clear()
 
 
 # Render settings window
@@ -200,7 +217,7 @@ def update():
     camera.look_at(earth)
 
     # Update airplane positions
-    if time.time() - last_fetch_time > 5.0:
+    if time.time() - last_fetch_time > 5.0 and settings_window.value == "Real Time":
         update_airplanes()
         last_fetch_time = time.time()
 

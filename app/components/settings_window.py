@@ -5,7 +5,10 @@ from ursina import (
     WindowPanel,
     ButtonGroup,
     destroy,
+    Button,
+    InputField
 )
+from .generator_window import generator_window
 
 
 class SettingsWindow:
@@ -14,7 +17,6 @@ class SettingsWindow:
     def __init__(self, rotation_speed: float = 0, mode_callback=None):
         self.rotation_speed = rotation_speed
         self.mode_callback = mode_callback
-
         self.modes = ButtonGroup(
             ("Real Time", "Simulation"), origin=(0, 0), spacing=(1, 0)
         )
@@ -31,16 +33,34 @@ class SettingsWindow:
             popup=False,
         )
 
-        self.window.position = Vec2(0.85, -0.15)
+        self.window.position = Vec2(0.85, -0.05)
         self.window.layout()
 
+    
+    def open_generator_window(self):
+        self.generator_window= generator_window()
+        
+
     def _build_content(self):
+        filter =  Button('Position Filter')
+        
+        generator = Button('Plane Generator')
+        generator.on_click = self.open_generator_window
+        generator.enabled = False
+        
+        
         return (
             Text("Rotation speed:"),
             self.speed_slider,
             Text("Mode:"),
             self.modes,
+            filter,
+            generator
+            
+           
         )
+    
+    
 
     @property
     def value(self):
